@@ -1,0 +1,77 @@
+# Split deployment:
+#   center  - Spring Boot control plane + UI (any host)
+#   gateway - execution node and the ONLY process that runs commands/agents
+#
+# Agent execution requires a real Orca runtime on the gateway host (`orca` CLI
+# plus the Orca app/runtime). The gateway image below therefore only covers the
+# command-execution path; for agent runs, deploy the gateway jar on the Orca
+# node (see docs/orca-executor.md) instead of this container.
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: devpilot
+      POSTGRES_USER: devpilot
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}
+    volumes:
+      - devpilot-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U devpilot -d devpilot"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  gateway:
+    build:
+      context: ../..
+      dockerfile: deployment/docker/gateway.Dockerfile
+    environment:
+      DEVPILOT_GATEWAY_ENABLED: "true"
+      DEVPILOT_GATEWAY_TOKEN: ${GATEWAY_AUTH_TOKEN:?set GATEWAY_AUTH_TOKEN}
+      DEVPILOT_WORKSPACE_ROOT: /data/workspaces
+      DEVPILOT_GATEWAY_STATE: /data/gateway
+      DEVPILOT_AGENT_RUNNER: ${GATEWAY_AGENT_RUNNER:-orca}
+      DEVPILOT_AGENT_ID: ${GATEWAY_AGENT_ID:-claude}
+      DEVPILOT_AGENT_MODEL: ${GATEWAY_AGENT_MODEL:-}
+      DEVPILOT_AUTO_COMMIT: ${GATEWAY_AUTO_COMMIT:-true}
+    volumes:
+      - devpilot-workspaces:/data/workspaces
+      - devpilot-mirrors:/data/mirrors
+    ports:
+      - "18080:18080"
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:18080/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+
+  center:
+    build:
+      context: ../..
+      dockerfile: deployment/docker/center.Dockerfile
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/devpilot
+      SPRING_DATASOURCE_USERNAME: devpilot
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
+      AI_EXECUTOR_MODE: remote
+      AI_EXECUTOR_REMOTE_ENDPOINT: http://gateway:18080
+      AI_EXECUTOR_REMOTE_TOKEN: ${GATEWAY_AUTH_TOKEN}
+      AI_EXECUTOR_REMOTE_ENABLED: "true"
+      DEVPILOT_WORKSPACE_ROOT: /data/workspaces
+      DEVPILOT_MIRROR_ROOT: /data/mirrors
+    volumes:
+      # The center creates worktrees/mirrors; the gateway must see the same paths.
+      - devpilot-workspaces:/data/workspaces
+      - devpilot-mirrors:/data/mirrors
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      gateway:
+        condition: service_started
+
+volumes:
+  devpilot-pgdata:
+  devpilot-workspaces:
+  devpilot-mirrors:

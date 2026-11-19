@@ -1,0 +1,60 @@
+server:
+  port: ${GATEWAY_PORT:18080}
+
+spring:
+  application:
+    name: devpilot-gateway
+
+ai:
+  gateway:
+    # Execution is off until an authorized node turns it on explicitly.
+    enabled: ${DEVPILOT_GATEWAY_ENABLED:false}
+    workspace-root: ${DEVPILOT_WORKSPACE_ROOT:./data/workspaces}
+    state-dir: ${DEVPILOT_GATEWAY_STATE:./data/gateway}
+    token: ${DEVPILOT_GATEWAY_TOKEN:}
+    orca-binary: ${ORCA_BINARY:orca}
+
+    # orca = supervised Orca workers (real CLI); template = legacy argv path.
+    agent-runner: ${DEVPILOT_AGENT_RUNNER:orca}
+    default-agent-id: ${DEVPILOT_AGENT_ID:claude}
+    # Optional provider model id; empty means the Orca agent's own default.
+    worker-model: ${DEVPILOT_AGENT_MODEL:}
+    # Per-role override, for example ai.gateway.agent-ids.CODE_REVIEWER: claude
+    agent-ids: {}
+
+    worker-poll-interval: 5s
+    worker-start-timeout: 2m
+    # Chat workers may stay open after finishing; treat a stable idle with a
+    # structured final answer as completion.
+    worker-idle-settle: ${DEVPILOT_WORKER_IDLE_SETTLE:20s}
+    # Transcript drain after settlement, so the final answer is not cut off.
+    worker-drain-window: ${DEVPILOT_WORKER_DRAIN_WINDOW:5s}
+    max-concurrent-workers: 4
+
+    # Orca refuses to launch agents in workspaces it does not know, so a task
+    # worktree is registered as a folder workspace before the first worker run.
+    register-workspace: ${DEVPILOT_REGISTER_WORKSPACE:true}
+    hide-workspace-when-done: ${DEVPILOT_HIDE_WORKSPACE:true}
+
+    # The gateway, not the agent, records and commits the change.
+    auto-commit: ${DEVPILOT_AUTO_COMMIT:true}
+    commit-author-name: ${DEVPILOT_COMMIT_NAME:devpilot-agent}
+    commit-author-email: ${DEVPILOT_COMMIT_EMAIL:devpilot@localhost}
+
+    default-timeout: 10m
+    max-log-bytes: 10000000
+
+    # Legacy path only; unused when agent-runner=orca.
+    agent-templates: {}
+    command-templates:
+      maven-test: ["mvn", "-B", "-q", "test"]
+      maven-verify: ["mvn", "-B", "-q", "clean", "verify"]
+      npm-test: ["npm", "test"]
+      git-status: ["git", "status", "--porcelain"]
+      git-diff-stat: ["git", "diff", "--stat"]
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info

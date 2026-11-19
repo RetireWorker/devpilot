@@ -1,0 +1,25 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:devpilot;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: ""
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+  flyway:
+    enabled: false
+
+ai:
+  devpilot:
+    delivery-enabled: false
+  executor:
+    mode: local
+    local:
+      enabled: false
+      endpoint: http://127.0.0.1:1
+  llm:
+    enabled: false
+  repository:
+    root: ${java.io.tmpdir}/devpilot-test/repositories
+    workspace-root: ${java.io.tmpdir}/devpilot-test/workspaces

@@ -1,0 +1,31 @@
+project:
+  id: example-production-service
+  name: 示例生产服务
+  description: 用于演示 Git 项目注册与 BUG 匹配
+  aliases: [prod-service, 生产服务]
+  serviceNames: [example-production-service]
+  logPackages: [com.example.production]
+  codePathKeywords: [src/main/java/com/example/production]
+  team: platform
+  owner: platform-owner
+
+runtime:
+  language: java
+  javaVersion: 17
+  framework: spring-boot
+
+repository:
+  type: git
+  url: ssh://git@git.example.com/platform/example-production-service.git
+  defaultBranch: develop
+  workspaceStrategy: git-worktree
+
+build:
+  commandKey: maven-verify
+  testCommandKey: maven-test
+
+delivery:
+  createMergeRequest: true
+  autoPush: false
+  requireReview: true
+  requireApproval: true

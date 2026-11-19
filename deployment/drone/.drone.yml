@@ -1,0 +1,37 @@
+kind: pipeline
+type: docker
+name: devpilot-build
+
+steps:
+  - name: test
+    image: maven:3.9-eclipse-temurin-17
+    commands:
+      - mvn -B -U clean verify
+
+  - name: build-center-image
+    image: plugins/docker
+    settings:
+      repo: 192.168.63.4:5000/devpilot/center
+      dockerfile: deployment/docker/center.Dockerfile
+      tags: [ "${DRONE_COMMIT_SHA}", "latest" ]
+      username:
+        from_secret: registry_username
+      password:
+        from_secret: registry_password
+    when:
+      branch: [ main, develop ]
+      event: [ push ]
+
+  - name: build-gateway-image
+    image: plugins/docker
+    settings:
+      repo: 192.168.63.4:5000/devpilot/gateway
+      dockerfile: deployment/docker/gateway.Dockerfile
+      tags: [ "${DRONE_COMMIT_SHA}", "latest" ]
+      username:
+        from_secret: registry_username
+      password:
+        from_secret: registry_password
+    when:
+      branch: [ main, develop ]
+      event: [ push ]

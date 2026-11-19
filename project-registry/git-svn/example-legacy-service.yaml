@@ -1,0 +1,34 @@
+project:
+  id: example-legacy-service
+  name: 示例历史服务
+  description: 用于演示 Git-SVN 项目注册
+  aliases: [legacy-service]
+  serviceNames: [example-legacy-service]
+  logPackages: [com.example.legacy]
+  codePathKeywords: [src/main/java/com/example/legacy]
+  team: legacy
+  owner: legacy-owner
+
+runtime:
+  language: java
+  javaVersion: 8
+  framework: spring-boot
+
+repository:
+  type: git-svn
+  svnUrl: https://svn.example.com/repos/example-legacy-service
+  layout: standard
+  targetRef: refs/remotes/svn/trunk
+  workspaceStrategy: git-worktree
+  dcommitMode: approval_required
+  serializeFetchAndDcommit: true
+
+build:
+  commandKey: maven-verify
+  testCommandKey: maven-test
+
+delivery:
+  createMergeRequest: false
+  autoPush: false
+  requireReview: true
+  requireApproval: true

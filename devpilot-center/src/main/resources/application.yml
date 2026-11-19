@@ -1,0 +1,55 @@
+server:
+  port: ${CENTER_PORT:8080}
+
+spring:
+  application:
+    name: devpilot-center
+  web:
+    resources:
+      # Optional external override for UI iteration; classpath assets remain the default.
+      static-locations: ${DEVPILOT_UI_DIR:classpath:/static/}
+  datasource:
+    url: ${DEVPILOT_DB_URL:jdbc:postgresql://localhost:5432/devpilot}
+    username: ${DEVPILOT_DB_USER:devpilot}
+    password: ${DEVPILOT_DB_PASSWORD:}
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+
+ai:
+  devpilot:
+    delivery-enabled: false
+    deployment-enabled: false
+    max-repair-rounds: 2
+  project-registry:
+    import-dir: ${DEVPILOT_PROJECT_REGISTRY_DIR:}
+  executor:
+    mode: local
+    local:
+      enabled: ${DEVPILOT_GATEWAY_CALL_ENABLED:false}
+      endpoint: ${ORCA_GATEWAY_ENDPOINT:http://127.0.0.1:18080}
+      token: ${ORCA_GATEWAY_TOKEN:}
+  llm:
+    enabled: false
+    base-url: ${LLM_BASE_URL:http://127.0.0.1:11434/v1}
+    api-key: ${LLM_API_KEY:}
+    model: ${LLM_MODEL:local-model}
+  repository:
+    # WorkspaceManager creates task worktrees under this root; the gateway must
+    # resolve the same relative path against the same absolute directory.
+    root: ${DEVPILOT_WORKSPACE_ROOT:./data/workspaces}
+    mirror-root: ${DEVPILOT_MIRROR_ROOT:./data/mirrors}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
